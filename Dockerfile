@@ -1,5 +1,5 @@
 # Use the official R image from the Rocker project
-FROM ohdsi/ohdsi-shiny-modules
+FROM ohdsi/ohdsi-shiny-modules:3.0.0
 
 RUN R -e "install.packages('duckdb')"
 COPY inst/shinyApps/QueryLibrary /srv/shiny-server/QueryLibrary

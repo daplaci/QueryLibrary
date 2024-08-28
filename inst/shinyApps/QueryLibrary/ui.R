@@ -156,6 +156,7 @@ ui <- dashboardPage(title = "QueryLibrary",
                 NULL,
                 choices = c(
                   "BigQuery",
+                  "DuckDB",
                   "Impala",
                   "Netezza",
                   "Oracle",
@@ -164,7 +165,7 @@ ui <- dashboardPage(title = "QueryLibrary",
                   "RedShift",
                   "SQL Server"
                 ),
-                selected = "SQL Server"
+                selected = "DuckDB"
               ),
               
               conditionalPanel(

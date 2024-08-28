@@ -332,7 +332,19 @@ server <- shinyServer(
         includeHTML(paste0(tempFolder, "/", createRenderedHtml("./about.md", "")))
       }
     )
+
+    output$env_vars <- renderPrint({
+      Sys.getenv()
+    })
+  
+    output$lib_paths <- renderPrint({
+      .libPaths()
+    })
     
+    output$session_info <- renderPrint({
+      sessionInfo()
+    })
+      
     session$onSessionEnded(function() {
       stopApp()
     })

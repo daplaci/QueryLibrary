@@ -8,6 +8,7 @@ ui <- dashboardPage(title = "QueryLibrary",
       menuItem("Home", tabName = "select", icon = icon("home")),
       menuItem("Configuration", tabName = "configuration", icon = icon("cog")),
       menuItem("About", tabName = "about", icon = icon("info")),
+      menuItem("Diagnostic", tabName = "diagnostic", icon = icon("bug")),
       menuItem("Feedback", icon = icon("comment"), href = "https://github.com/OHDSI/QueryLibrary/issues")
     ),
     tags$footer(
@@ -223,7 +224,16 @@ ui <- dashboardPage(title = "QueryLibrary",
             )
           )
         )
+      ),
+      tabItem(
+        tabName = "diagnostic",
+        fluidRow(
+            verbatimTextOutput("env_vars"),
+            verbatimTextOutput("lib_paths"),
+            verbatimTextOutput("session_info")
+        )
       )
+
     )
   )
 )

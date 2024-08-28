@@ -56,22 +56,30 @@ ui <- dashboardPage(title = "QueryLibrary",
         tabsetPanel(
           id = "SelectExecuteTabs",
           tabPanel("Select",
+            value = "select_panel",
             h2("Select a query"),
             fluidRow(
               column(
                 label = 'selectedQuery',
-                width = 6,
+                width = 5,
                 offset = 0,
                 #actionButton("clearFiltersButton","Clear All Filters"),
                 DTOutput("queriesTable")
               ),
               column(
-                width = 6,
+                width = 5,
                 box(
                   title = "Query Description",
                   width = NULL,
                   status = "primary",
                   uiOutput(outputId = "html")
+                )
+              ),
+              column(
+                width=2,
+                box(
+                  uiOutput("dynamicInputs"),
+                  actionButton("executeSql", "Run SQL"),
                 )
               )
             )
@@ -79,6 +87,7 @@ ui <- dashboardPage(title = "QueryLibrary",
           
           tabPanel(
             "Execute",
+            value = "execute_panel",
             box(
               title = "Execute",
               width = NULL,
@@ -172,7 +181,7 @@ ui <- dashboardPage(title = "QueryLibrary",
               conditionalPanel(
                 condition = "output.allowexecute",
                 h4("server"),
-                textInput("server", NULL)
+                textInput("server", label=NULL, value="~/rigshospitalet_etl/rigs-etl.duckdb")
                 ,
                 h4("username"),
                 textInput("user", NULL),
@@ -185,10 +194,10 @@ ui <- dashboardPage(title = "QueryLibrary",
               ),
                 
               h4("cdm schema"),
-              textInput("cdm", NULL, value = "cdm"),
+              textInput("cdm", NULL, value = "site1"),
                 
               h4("vocabulary schema"),
-              textInput("vocab", NULL, value = "cdm"),
+              textInput("vocab", NULL, value = "vocab"),
               
               conditionalPanel(
                 condition = "output.allowexecute",

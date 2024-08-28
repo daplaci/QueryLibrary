@@ -2,6 +2,7 @@
 server <- shinyServer(
   function(input, output, session) {
     options(shiny.sanitize.errors = TRUE)
+    options(databaseConnectorInteger64AsNumeric = FALSE)
   
     query <- reactiveValues()
   
@@ -10,6 +11,7 @@ server <- shinyServer(
     query$name <- reactive({toString(queriesDf$Query[input$queriesTable_rows_selected])})
   
     query$inputFileName <- reactive({mdFiles[input$queriesTable_rows_selected]})
+    query$inputVars <- reactive({getInputVarFromMarkdown(query$inputFileName(), "input_vars")})
   
     query$sqlSource <- reactive({getSqlFromMarkdown(query$inputFileName())})
   
@@ -17,6 +19,12 @@ server <- shinyServer(
   
     query$sqlTarget <- reactive(
       {
+        input_vars <- query$inputVars()
+        for (i in seq_along(input_vars)) {
+          input_vars[[i]]$value <- input[[input_vars[[i]]$varname]]
+        }
+        source_sql_with_inputs <- updateSqlWithInputs(query$sqlSource(), input_vars)
+        
         parameterValues <- list()
         for (param in query$parameters()) {
           value <- input[[param]]
@@ -24,7 +32,7 @@ server <- shinyServer(
             parameterValues[[param]] <- value
           }
         }
-        sql <- do.call("render", append(query$sqlSource(), parameterValues))
+        sql <- do.call("render", append(source_sql_with_inputs, parameterValues))
         warningString <- c()
         handleWarning <- function(e) {
           output$warnings <- e$message
@@ -89,6 +97,17 @@ server <- shinyServer(
           textInput(param, param, value = value)
         }
         lapply(params, createRow, sql = sql)
+      }
+    )
+    
+    output$dynamicInputs <- renderUI(
+      {
+        input_list <- lapply(query$inputVars(), function(input_config) {
+          if (!is.null(names(input_config))) {
+            numericInput(input_config$varname, input_config$varname, value = NULL)
+          }
+        })
+        do.call(tagList, input_list)
       }
     )
   
@@ -216,7 +235,40 @@ server <- shinyServer(
           showNotification("First select a query to import",type = "message", duration = 2)
       }
     )
-  
+    
+    observeEvent(
+      input$executeSql, 
+      {
+        connectionDetails <- createConnectionDetails(
+          dbms = tolower(input$dialect),
+          user = input$user,
+          password = input$password,
+          server = input$server,
+          port = input$port,
+          extraSettings = input$extraSettings
+        )
+        con <-DatabaseConnector::connect(connectionDetails)
+        
+        sql <- query$sqlTarget()
+        results<-NULL
+        tryCatch(
+          {
+            results <- DatabaseConnector::querySql(con,sql)
+          },
+          error=function(cond) {
+            showNotification(as.character(cond$message),type = "error")
+          }
+        )
+        disconnect(con)
+        #return(as.data.frame(results))
+        # Fill in the reactiveValues to tricker table update
+        query$sql <- sql
+        query$data <- results
+        updateTabsetPanel(session, "SelectExecuteTabs", selected = "execute_panel")
+      },
+      ignoreNULL = TRUE
+    )
+    
     observeEvent(
       input$executeButton, 
       {

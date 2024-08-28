@@ -19,8 +19,27 @@ getSqlFromMarkdown <- function(filename) {
       }
     }
   }
-  return(paste(sqlLines, collapse = "\n"))
+  full_sql <- paste(sqlLines, collapse = "\n")
+
+  return(full_sql)
 }
+
+updateSqlWithInputs <- function(sql, input_vars){
+  for (input_var in input_vars) {
+    placeholder <- paste0("{{", input_var$varname, "}}")
+    
+    value_to_replace <- tryCatch(
+      as.character(input_var$value),
+      error = function(e) NULL
+    )
+    
+    if (!is.na(input_var$value) && is.character(value_to_replace) && length(value_to_replace) > 0){
+      sql <- gsub(placeholder, value_to_replace, sql, fixed = TRUE)  
+    }
+  }
+  return (sql)
+}
+  
 
 getVariableFromMarkdown <- function(filename, key) {
   markdownLines <- readLines(con <- file(filename))
@@ -37,6 +56,30 @@ getVariableFromMarkdown <- function(filename, key) {
   return("")
 }
 
+getInputVarFromMarkdown <- function(filename, key){
+  if (length(filename) == 0) {
+    return(list())
+  }
+  markdownLines <- readLines(con <- file(filename))
+  close(con)
+  
+  sqlLines <- character()
+  inputvars <- list()
+  for (line in markdownLines) {
+    # If line starts with three ticks, it is the start of a snipped
+    if (startsWith(line, key)) {
+      varname_vartype <- strsplit(line, ":")[[1]][2]
+      varname <- strsplit(varname_vartype, ",")[[1]][1]
+      vartype <- strsplit(varname_vartype, ",")[[1]][2]
+      varname <- trimws(varname)
+      vartype <- trimws(vartype)
+      
+      inputvars <- append(inputvars, list(list("varname"=varname, "vartype"=vartype)))
+    }
+  }
+
+  return(inputvars)
+}
 
 createRenderedHtml <- function(filename, targetSql) {
   markdownLines <- readLines(con <- file(filename))
